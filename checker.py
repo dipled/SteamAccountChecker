@@ -21,7 +21,7 @@ def query_unverified(steam_id64 : str, steam_id : str, player_name : str, data_s
     return False
 
 def query_old_games(steam_id64 : str, steam_id : str, player_name : str, data_games, data_level, data_badge) -> bool:
-    if len(data_games["response"]) == 0 or "games" not in data_games["response"] or len(data_games["response"]["games"] or "badges" not in data_badge["response"]) == 0:
+    if len(data_games["response"]) == 0 or "games" not in data_games["response"] or (len(data_games["response"]["games"]) == 0 or "badges" not in data_badge["response"]):
         return False
     else:
         gameid_list = list(map(lambda x : x["appid"], data_games["response"]["games"]))
@@ -36,7 +36,7 @@ def query_old_games(steam_id64 : str, steam_id : str, player_name : str, data_ga
                 f.write(f"OLD GAMES ACCOUNT FOUND:\n{steam_id} | {player_name} | https://steamcommunity.com/profiles/{steam_id64}\n\n")
             return True
 
-def query_lvl0(steam_id64 : str, steam_id : str, player_name : str, data_level):
+def query_lvl0(steam_id64 : str, steam_id : str, player_name : str, data_level) -> bool:
     if data_level["response"]["player_level"] == 0:
         print(f"Level 0 account found: {steam_id} | https://steamcommunity.com/profiles/{steam_id64}")
         with open("output/lvl0_accounts.txt", "a", encoding="utf-8") as f:
@@ -44,11 +44,7 @@ def query_lvl0(steam_id64 : str, steam_id : str, player_name : str, data_level):
         return True
     return False
 
-def query(server : int, steam_digit : int) -> AccountType:
-
-    # query player summary no matter what, because we use player_name everywhere
-    steam_id = f"STEAM_0:{server}:{steam_digit}"
-    steam_id64 = utils.convert_to_steam64(steam_id)
+def request_summary(steam_id64 : str):
     url_summary = f"https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/"
     params_summary = {
             "key": STEAM_API_KEY,
@@ -59,16 +55,86 @@ def query(server : int, steam_digit : int) -> AccountType:
         data_summary = response_summary.json()
         if len(data_summary["response"]["players"]) == 0:
             print(f"Non-existent account: {steam_id}")
-            return AccountType.NONE
-        player_name = data_summary["response"]["players"][0]["personaname"]
+            return None
+        return data_summary
     except requests.exceptions.ConnectTimeout as e:
         print("Connection timed out. Waiting and retrying")
         time.sleep(5)
-        query(server, steam_digit)
+        request_summary(steam_id64)
     except Exception as e:
         print(f"Error: {e} PROBABLY STEAM API LIMIT REACHED, PLEASE SWITCH THE KEY")
         sys.exit(1)
 
+def request_level(steam_id64 : str):
+    url_level = "https://api.steampowered.com/IPlayerService/GetSteamLevel/v1/"
+    params_level = {
+        "key": STEAM_API_KEY,
+        "steamid": steam_id64
+    }
+    try:
+        response_level = requests.get(url_level, params=params_level)
+        data_level = response_level.json()
+        if len(data_level["response"]) == 0:
+            return None
+        return data_level
+    except requests.exceptions.ConnectTimeout as e:
+        print("Connection timed out. Waiting and retrying")
+        time.sleep(5)
+        request_level(steam_id64)
+    except Exception as e:
+        print(f"Error: {e} PROBABLY STEAM API LIMIT REACHED, PLEASE SWITCH THE KEY")
+        sys.exit(1)
+
+def request_games(steam_id64 : str):
+    url_games = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/"
+    params_games = {
+        "key": STEAM_API_KEY,
+        "steamid": steam_id64,
+        "format": "json"
+    }
+    try:
+        response_games = requests.get(url_games, params=params_games)
+        data_games = response_games.json()
+        return data_games
+    except requests.exceptions.ConnectTimeout as e:
+            print("Connection timed out. Waiting and retrying")
+            time.sleep(5)
+            request_games(steam_id64)
+    except Exception as e:
+        print(f"Error: {e} PROBABLY STEAM API LIMIT REACHED, PLEASE SWITCH THE KEY")
+        sys.exit(1)
+
+def request_badge(steam_id64 : str):
+    url_badge = "https://api.steampowered.com/IPlayerService/GetBadges/v1/"
+    params_badge = {
+        "key": STEAM_API_KEY,
+        "steamid": steam_id64,
+        "format": "json"
+    }
+    try:
+        response_badge = requests.get(url_badge, params=params_badge)
+        data_badge = response_badge.json()
+        return data_badge
+    except requests.exceptions.ConnectTimeout as e:
+            print("Connection timed out. Waiting and retrying")
+            time.sleep(5)
+            request_badge(steam_id64)
+    except Exception as e:
+        print(f"Error: {e} PROBABLY STEAM API LIMIT REACHED, PLEASE SWITCH THE KEY")
+        sys.exit(1)
+
+def query(server : int, steam_digit : int) -> AccountType:
+
+    # query player summary no matter what, because we use player_name everywhere
+    steam_id = f"STEAM_0:{server}:{steam_digit}"
+    steam_id64 = utils.convert_to_steam64(steam_id)
+
+    data_summary = request_summary(steam_id64)
+    if(data_summary == None):
+        return AccountType.NONE
+    
+    player_name = data_summary["response"]["players"][0]["personaname"]
+   
     # unverified accounts query
     if(settings["unverified_accounts"]):
         if(query_unverified(steam_id64, steam_id, player_name, data_summary)):
@@ -76,52 +142,17 @@ def query(server : int, steam_digit : int) -> AccountType:
         
     # if we"re going to query old games or lvl0 we might as well hit the level ep already
     if(settings["old_games"] or settings["lvl0_accounts"]):
-        url_level = "https://api.steampowered.com/IPlayerService/GetSteamLevel/v1/"
-        params_level = {
-            "key": STEAM_API_KEY,
-            "steamid": steam_id64
-        }
-        try:
-            response_level = requests.get(url_level, params=params_level)
-            data_level = response_level.json()
-            if len(data_level["response"]) == 0:
-                return AccountType.NONE
-        except requests.exceptions.ConnectTimeout as e:
-            print("Connection timed out. Waiting and retrying")
-            time.sleep(5)
-            query(server, steam_digit)
-        except Exception as e:
-            print(f"Error: {e} PROBABLY STEAM API LIMIT REACHED, PLEASE SWITCH THE KEY")
-            sys.exit(1)
+        data_level = request_level(steam_id64)
+        if(data_level == None):
+            return AccountType.NONE
 
     # old games query
     if(settings["old_games"]):
-        url_games = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/"
-        params_games = {
-            "key": STEAM_API_KEY,
-            "steamid": steam_id64,
-            "format": "json"
-        }
-        url_badge = "https://api.steampowered.com/IPlayerService/GetBadges/v1/"
-        params_badge = {
-            "key": STEAM_API_KEY,
-            "steamid": steam_id64,
-            "format": "json"
-        }
-        try:
-            response_games = requests.get(url_games, params=params_games)
-            data_games = response_games.json()
-            response_badge = requests.get(url_badge, params=params_badge)
-            data_badge = response_badge.json()
-            if(query_old_games(steam_id64, steam_id, player_name, data_games, data_level, data_badge)):
-                return AccountType.OLD_GAMES
-        except requests.exceptions.ConnectTimeout as e:
-            print("Connection timed out. Waiting and retrying")
-            time.sleep(5)
-            query(server, steam_digit)
-        except Exception as e:
-            print(f"Error: {e} PROBABLY STEAM API LIMIT REACHED, PLEASE SWITCH THE KEY")
-            sys.exit(1)
+        data_games = request_games(steam_id64)
+        data_badge = request_badge(steam_id64)
+        if(query_old_games(steam_id64, steam_id, player_name, data_games, data_level, data_badge)):
+            return AccountType.OLD_GAMES
+        
     # level 0 query
     if settings["lvl0_accounts"]:
         if(query_lvl0(steam_id64, steam_id, player_name, data_level)):
