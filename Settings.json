@@ -1,9 +1,10 @@
 {
-    "start_id": 10000,
-    "end_id": 559899666,
+    "start_id": 5775857,
+    "end_id": 577981455,
     "request_limit": 50,
     "unverified_accounts": true,
     "lvl0_accounts": true,
-    "css_accounts": true,
+    "old_games": true,
+    "csgo" : true,
     "api_key" : ""
 }
