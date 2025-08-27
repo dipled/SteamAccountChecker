@@ -1,0 +1,9 @@
+{
+    "start_id": 10000,
+    "end_id": 559899666,
+    "request_limit": 50,
+    "unverified_accounts": true,
+    "lvl0_accounts": true,
+    "css_accounts": true,
+    "api_key" : ""
+}
