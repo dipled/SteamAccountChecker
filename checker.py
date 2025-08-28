@@ -63,6 +63,7 @@ def request_summary(steam_id64 : str):
         request_summary(steam_id64)
     except Exception as e:
         print(f"Error: {e} PROBABLY STEAM API LIMIT REACHED, PLEASE SWITCH THE KEY")
+        print(f"Response code: {response_summary.status_code}")
         
 
 def request_level(steam_id64 : str):
@@ -83,6 +84,7 @@ def request_level(steam_id64 : str):
         request_level(steam_id64)
     except Exception as e:
         print(f"Error: {e} PROBABLY STEAM API LIMIT REACHED, PLEASE SWITCH THE KEY")
+        print(f"Response code: {response_level.status_code}")
         
 
 def request_games(steam_id64 : str):
@@ -102,6 +104,7 @@ def request_games(steam_id64 : str):
             request_games(steam_id64)
     except Exception as e:
         print(f"Error: {e} PROBABLY STEAM API LIMIT REACHED, PLEASE SWITCH THE KEY")
+        print(f"Response code: {response_games.status_code}")
         
 
 def request_badge(steam_id64 : str):
@@ -121,6 +124,7 @@ def request_badge(steam_id64 : str):
             request_badge(steam_id64)
     except Exception as e:
         print(f"Error: {e} PROBABLY STEAM API LIMIT REACHED, PLEASE SWITCH THE KEY")
+        print(f"Response code: {response_badge.status_code}")
         
 
 def query(server : int, steam_digit : int) -> AccountType:
