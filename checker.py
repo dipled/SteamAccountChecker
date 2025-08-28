@@ -98,8 +98,11 @@ def request_summary(steam_id64 : str):
         time.sleep(5)
         request_summary(steam_id64)
     except Exception as e:
-        print(f"Error: {e} PROBABLY STEAM API LIMIT REACHED, PLEASE SWITCH THE KEY")
+        if(response_summary.status_code == 429):
+            print(f"Error: {e} PROBABLY STEAM API LIMIT REACHED, PLEASE SWITCH THE KEY")
+            return None
         print(f"Response code: {response_summary.status_code}")
+        request_summary(steam_id64)
         
 
 def request_level(steam_id64 : str):
@@ -117,8 +120,11 @@ def request_level(steam_id64 : str):
         time.sleep(5)
         request_level(steam_id64)
     except Exception as e:
-        print(f"Error: {e} PROBABLY STEAM API LIMIT REACHED, PLEASE SWITCH THE KEY")
+        if(response_level.status_code == 429):
+            print(f"Error: {e} PROBABLY STEAM API LIMIT REACHED, PLEASE SWITCH THE KEY")
+            return None
         print(f"Response code: {response_level.status_code}")
+        request_level(steam_id64)
         
 
 def request_games(steam_id64 : str):
@@ -137,8 +143,11 @@ def request_games(steam_id64 : str):
             time.sleep(5)
             request_games(steam_id64)
     except Exception as e:
-        print(f"Error: {e} PROBABLY STEAM API LIMIT REACHED, PLEASE SWITCH THE KEY")
+        if(response_games.status_code == 429):
+            print(f"Error: {e} PROBABLY STEAM API LIMIT REACHED, PLEASE SWITCH THE KEY")
+            return None
         print(f"Response code: {response_games.status_code}")
+        request_games(steam_id64)
         
 
 def request_badge(steam_id64 : str):
@@ -157,8 +166,11 @@ def request_badge(steam_id64 : str):
             time.sleep(5)
             request_badge(steam_id64)
     except Exception as e:
-        print(f"Error: {e} PROBABLY STEAM API LIMIT REACHED, PLEASE SWITCH THE KEY")
+        if(response_badge.status_code == 429):
+            print(f"Error: {e} PROBABLY STEAM API LIMIT REACHED, PLEASE SWITCH THE KEY")
+            return None
         print(f"Response code: {response_badge.status_code}")
+        request_badge(steam_id64)
         
 
 def query(server : int, steam_digit : int) -> AccountType:
