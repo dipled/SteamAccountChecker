@@ -10,7 +10,8 @@ class AccountType(Enum):
     UNVERIFIED = 1
     OLD_GAMES = 2
     LVL0 = 3
-    NONE = 4
+    CSGO = 4
+    NONE = 5
 
 def query_unverified(steam_id64 : str, steam_id : str, player_name : str, data_summary) -> bool:
     if ("profilestate" not in data_summary["response"]["players"][0]) or (data_summary["response"]["players"][0]["profilestate"] == 0):
@@ -21,28 +22,51 @@ def query_unverified(steam_id64 : str, steam_id : str, player_name : str, data_s
     return False
 
 def query_old_games(steam_id64 : str, steam_id : str, player_name : str, data_games, data_level, data_badge) -> bool:
-    if len(data_games["response"]) == 0 or "games" not in data_games["response"] or (len(data_games["response"]["games"]) == 0 or "badges" not in data_badge["response"]):
+    if len(data_level["response"]) == 0:
         return False
-    else:
-        gameid_list = list(map(lambda x : x["appid"], data_games["response"]["games"]))
-        badge_list = list(filter(lambda x: x["badgeid"] == 13, data_badge["response"]["badges"]))
+    if len(data_games["response"]) == 0 or "games" not in data_games["response"] or (len(data_games["response"]["games"]) == 0):
+        return False
+    if("badges" not in data_badge["response"]):
+        return False
+    gameid_list = list(map(lambda x : x["appid"], data_games["response"]["games"]))
+    badge_owned_games = list(filter(lambda x: x["badgeid"] == 13, data_badge["response"]["badges"]))
 
-        if(len(badge_list) == 0):
-            return False
-        
-        if (240 in gameid_list or 70 in gameid_list or 10 in gameid_list) and data_level["response"]["player_level"] <= 9 and badge_list[0]['level'] <= 5:
-            print(f"Account owns CSS, HL or CS 1.6: {steam_id} | https://steamcommunity.com/profiles/{steam_id64}")
-            with open("output/old_games_accounts.txt", "a", encoding="utf-8") as f:
-                f.write(f"OLD GAMES ACCOUNT FOUND:\n{steam_id} | {player_name} | https://steamcommunity.com/profiles/{steam_id64}\n\n")
-            return True
+    if(len(badge_owned_games) == 0):
+        return False
+    
+    if(240 in gameid_list or 70 in gameid_list or 10 in gameid_list) and data_level["response"]["player_level"] <= 9 and badge_owned_games[0]['level'] <= 5:
+        print(f"Account owns CSS, HL or CS 1.6: {steam_id} | https://steamcommunity.com/profiles/{steam_id64}")
+        with open("output/old_games_accounts.txt", "a", encoding="utf-8") as f:
+            f.write(f"OLD GAMES ACCOUNT FOUND:\n{steam_id} | {player_name} | https://steamcommunity.com/profiles/{steam_id64}\n\n")
+        return True
 
 def query_lvl0(steam_id64 : str, steam_id : str, player_name : str, data_level) -> bool:
+    if len(data_level["response"]) == 0:
+        return False
     if data_level["response"]["player_level"] == 0:
         print(f"Level 0 account found: {steam_id} | https://steamcommunity.com/profiles/{steam_id64}")
         with open("output/lvl0_accounts.txt", "a", encoding="utf-8") as f:
             f.write(f"LEVEL 0 ACCOUNT FOUND:\n{steam_id} | {player_name } |https://steamcommunity.com/profiles/{steam_id64}\n\n")
         return True
     return False
+
+def query_csgo (steam_id64 : str, steam_id : str, player_name : str, data_games, data_level) -> bool :
+    if len(data_level["response"]) == 0:
+        return False
+    if len(data_games["response"]) == 0 or "games" not in data_games["response"] or (len(data_games["response"]["games"]) == 0):
+        return False
+    game_csgo = list(filter(lambda x : x["appid"] == 730, data_games["response"]["games"]))
+    if(len(game_csgo) == 0):
+        return False
+    if(game_csgo[0]["playtime_forever"] >= 600 or "playtime_2weeks" in game_csgo[0] or data_level["response"]["player_level"] > 9):
+        return False
+    else:
+        print(f"Abandoned CSGO Account Found: {steam_id} | https://steamcommunity.com/profiles/{steam_id64}")
+        with open("output/csgo_accounts.txt", "a", encoding="utf-8") as f:
+            f.write(f"ABANDONED CSGO ACCOUNT FOUND:\n{steam_id} | {player_name} | https://steamcommunity.com/profiles/{steam_id64}\n\n")
+        return True
+        
+    
 
 def request_summary(steam_id64 : str):
     url_summary = f"https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/"
@@ -75,8 +99,6 @@ def request_level(steam_id64 : str):
     try:
         response_level = requests.get(url_level, params=params_level)
         data_level = response_level.json()
-        if len(data_level["response"]) == 0:
-            return None
         return data_level
     except requests.exceptions.ConnectTimeout as e:
         print("Connection timed out. Waiting and retrying")
@@ -145,14 +167,19 @@ def query(server : int, steam_digit : int) -> AccountType:
             return AccountType.UNVERIFIED
         
     # if we"re going to query old games or lvl0 we might as well hit the level ep already
-    if(settings["old_games"] or settings["lvl0_accounts"]):
+    if(settings["old_games"] or settings["lvl0_accounts"] or settings["csgo_accounts"]):
         data_level = request_level(steam_id64)
-        if(data_level == None):
-            return AccountType.NONE
+
+    if(settings["old_games"] or settings["csgo_accounts"]):
+        data_games = request_games(steam_id64)
+
+    # csgo query
+    if(settings["csgo_accounts"]):
+        if(query_csgo(steam_id64, steam_id, player_name, data_games, data_level)):
+            return AccountType.CSGO
 
     # old games query
     if(settings["old_games"]):
-        data_games = request_games(steam_id64)
         data_badge = request_badge(steam_id64)
         if(query_old_games(steam_id64, steam_id, player_name, data_games, data_level, data_badge)):
             return AccountType.OLD_GAMES
