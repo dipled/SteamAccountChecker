@@ -1,10 +1,11 @@
 {
-    "start_id": 5776632,
+    "start_id": 5775857,
     "end_id": 577981455,
     "request_limit": 50,
     "unverified_accounts": true,
     "lvl0_accounts": true,
     "old_games": true,
     "csgo_accounts" : true,
+    "num_threads" : 4,
     "api_key" : ""
 }

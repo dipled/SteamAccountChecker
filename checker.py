@@ -5,6 +5,7 @@ import requests
 import json
 import os
 from enum import Enum
+import threading
 
 class AccountType(Enum):
     UNVERIFIED = 1
@@ -14,6 +15,8 @@ class AccountType(Enum):
     NONE = 5
 
 def query_unverified(steam_id64 : str, steam_id : str, player_name : str, data_summary) -> bool:
+    if(data_summary == None):
+        return False
     if ("profilestate" not in data_summary["response"]["players"][0]) or (data_summary["response"]["players"][0]["profilestate"] == 0):
             print(f"Unverified account found: {steam_id} | https://steamcommunity.com/profiles/{steam_id64}")
             with open("output/unverified_accounts.txt", "a", encoding="utf-8") as f:
@@ -22,6 +25,8 @@ def query_unverified(steam_id64 : str, steam_id : str, player_name : str, data_s
     return False
 
 def query_old_games(steam_id64 : str, steam_id : str, player_name : str, data_games, data_level, data_badge) -> bool:
+    if(data_level == None or data_badge == None or data_games == None):
+        return False
     if len(data_level["response"]) == 0:
         return False
     if len(data_games["response"]) == 0 or "games" not in data_games["response"] or (len(data_games["response"]["games"]) == 0):
@@ -41,6 +46,8 @@ def query_old_games(steam_id64 : str, steam_id : str, player_name : str, data_ga
         return True
 
 def query_lvl0(steam_id64 : str, steam_id : str, player_name : str, data_level) -> bool:
+    if(data_level == None):
+        return False
     if len(data_level["response"]) == 0:
         return False
     if data_level["response"]["player_level"] == 0:
@@ -51,9 +58,11 @@ def query_lvl0(steam_id64 : str, steam_id : str, player_name : str, data_level) 
     return False
 
 def query_csgo (steam_id64 : str, steam_id : str, player_name : str, data_games, data_level) -> bool :
+    if (data_level == None or data_games == None):
+        return False
     if len(data_level["response"]) == 0:
         return False
-    if len(data_games["response"]) == 0 or "games" not in data_games["response"] or (len(data_games["response"]["games"]) == 0):
+    if len(data_games["response"]) == 0 or ("games" not in data_games["response"]) or (len(data_games["response"]["games"]) == 0):
         return False
     games_played_2weeks = list(filter(lambda x : "playtime_2weeks" in x, data_games["response"]["games"]))
     if(len(games_played_2weeks) != 0):
@@ -81,7 +90,7 @@ def request_summary(steam_id64 : str):
         response_summary = requests.get(url_summary, params=params_summary)
         data_summary = response_summary.json()
         if len(data_summary["response"]["players"]) == 0:
-            print(f"Non-existent account: {steam_id}")
+            print(f"Non-existent account: {steam_id64}")
             return None
         return data_summary
     except requests.exceptions.ConnectTimeout as e:
@@ -193,20 +202,50 @@ def query(server : int, steam_digit : int) -> AccountType:
             return AccountType.LVL0
     return AccountType.NONE
 
-with open("Settings.json", "r", encoding="utf-8") as f:
-    file_contents = f.read()
-    settings = json.loads(file_contents)
-    
-os.makedirs("output", exist_ok=True)
-STEAM_API_KEY = settings["api_key"]
 
-try:
-    for i in range(settings["start_id"], settings["end_id"]):
+def query_handler(start_id: int, end_id: int):
+    for i in range(start_id, end_id):
+        if stop_event.is_set(): 
+            print("Stopping thread gracefully...")
+            return
         for j in range(2):
+            if stop_event.is_set():
+                return
             steam_id = f"STEAM_0:{j}:{i}"
             print(f"\nChecking {steam_id} ...")
             query(j, i)
-except KeyboardInterrupt:
-    print("\nExiting...")
-print("\n\nFinished")
+            time.sleep(0.5)
 
+
+with open("Settings.json", "r", encoding="utf-8") as f:
+    file_contents = f.read()
+    settings = json.loads(file_contents)
+
+stop_event = threading.Event()  
+os.makedirs("output", exist_ok=True)
+STEAM_API_KEY = settings["api_key"]
+num_threads = settings["num_threads"]
+threads = []
+chunk_size = int((settings["end_id"] - settings["start_id"] + 1)/num_threads)
+start = settings["start_id"]
+end = chunk_size
+for i in range(num_threads):
+    end = end * (i + 1)
+    t = threading.Thread(target=query_handler, args=(start, end))
+    threads.append(t)
+    start = end + 1
+
+try:
+    for t in threads:
+        t.start()
+
+    for t in threads:
+        t.join()
+
+except KeyboardInterrupt:
+    print("\n[!] KeyboardInterrupt detected! Stopping threads...")
+    stop_event.set()
+    for t in threads:
+        t.join()
+    print("[!] Program terminated cleanly.")
+    sys.exit(0)
