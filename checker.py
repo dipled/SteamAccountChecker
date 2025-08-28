@@ -55,6 +55,9 @@ def query_csgo (steam_id64 : str, steam_id : str, player_name : str, data_games,
         return False
     if len(data_games["response"]) == 0 or "games" not in data_games["response"] or (len(data_games["response"]["games"]) == 0):
         return False
+    games_played_2weeks = list(filter(lambda x : "playtime_2weeks" in x, data_games["response"]["games"]))
+    if(len(games_played_2weeks) != 0):
+        return False
     game_csgo = list(filter(lambda x : x["appid"] == 730, data_games["response"]["games"]))
     if(len(game_csgo) == 0):
         return False
