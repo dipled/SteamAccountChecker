@@ -63,7 +63,7 @@ def request_summary(steam_id64 : str):
         request_summary(steam_id64)
     except Exception as e:
         print(f"Error: {e} PROBABLY STEAM API LIMIT REACHED, PLEASE SWITCH THE KEY")
-        sys.exit(1)
+        
 
 def request_level(steam_id64 : str):
     url_level = "https://api.steampowered.com/IPlayerService/GetSteamLevel/v1/"
@@ -83,7 +83,7 @@ def request_level(steam_id64 : str):
         request_level(steam_id64)
     except Exception as e:
         print(f"Error: {e} PROBABLY STEAM API LIMIT REACHED, PLEASE SWITCH THE KEY")
-        sys.exit(1)
+        
 
 def request_games(steam_id64 : str):
     url_games = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/"
@@ -102,7 +102,7 @@ def request_games(steam_id64 : str):
             request_games(steam_id64)
     except Exception as e:
         print(f"Error: {e} PROBABLY STEAM API LIMIT REACHED, PLEASE SWITCH THE KEY")
-        sys.exit(1)
+        
 
 def request_badge(steam_id64 : str):
     url_badge = "https://api.steampowered.com/IPlayerService/GetBadges/v1/"
@@ -121,7 +121,7 @@ def request_badge(steam_id64 : str):
             request_badge(steam_id64)
     except Exception as e:
         print(f"Error: {e} PROBABLY STEAM API LIMIT REACHED, PLEASE SWITCH THE KEY")
-        sys.exit(1)
+        
 
 def query(server : int, steam_digit : int) -> AccountType:
 
