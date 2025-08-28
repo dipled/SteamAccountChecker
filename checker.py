@@ -53,7 +53,7 @@ def query_lvl0(steam_id64 : str, steam_id : str, player_name : str, data_level) 
     if data_level["response"]["player_level"] == 0:
         print(f"Level 0 account found: {steam_id} | https://steamcommunity.com/profiles/{steam_id64}")
         with open("output/lvl0_accounts.txt", "a", encoding="utf-8") as f:
-            f.write(f"LEVEL 0 ACCOUNT FOUND:\n{steam_id} | {player_name } |https://steamcommunity.com/profiles/{steam_id64}\n\n")
+            f.write(f"LEVEL 0 ACCOUNT FOUND:\n{steam_id} | {player_name } | https://steamcommunity.com/profiles/{steam_id64}\n\n")
         return True
     return False
 
