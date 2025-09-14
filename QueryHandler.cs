@@ -313,7 +313,7 @@ class QueryHandler
         .Where(badge => badge.GetProperty("badgeid").GetInt32() == 13)
         .ToList();
 
-        if (badgeOwnedGames.Count == 0 || badgeOwnedGames[0].GetProperty("level").GetInt32() > 4)
+        if (badgeOwnedGames.Count == 0 || badgeOwnedGames[0].GetProperty("level").GetInt32() > 9)
         {
             return false;
         }
