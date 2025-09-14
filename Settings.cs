@@ -7,10 +7,9 @@ class Settings
     public required bool OldGames { get; set; }
     public required bool CsgoAccounts { get; set; }
     public required int NumThreads { get; set; }
-    public required string ApiKey { get; set; }
 
     public override string ToString()
     {
-        return $"StartId: {StartId}, EndId: {EndId}, NumThreads: {NumThreads}, ApiKey: {ApiKey}";
+        return $"StartId: {StartId}, EndId: {EndId}, NumThreads: {NumThreads}";
     }
 }
