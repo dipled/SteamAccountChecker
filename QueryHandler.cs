@@ -275,6 +275,10 @@ class QueryHandler
                 return false;
             }
         }
+        else
+        {
+            return false;
+        }
 
         JsonElement realName;
         if (dataSummary.RootElement.GetProperty("response").GetProperty("players")[0].TryGetProperty("realname", out realName))
