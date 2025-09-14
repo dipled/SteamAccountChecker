@@ -1,0 +1,10 @@
+{
+    "StartId": 5775857,
+    "EndId": 577981455,
+    "UnverifiedAccounts": true,
+    "Lvl0Accounts": true,
+    "OldGames": true,
+    "CsgoAccounts" : true,
+    "NumThreads" : 4,
+    "ApiKey" : ""
+}
