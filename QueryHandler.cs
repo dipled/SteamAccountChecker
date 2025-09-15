@@ -426,6 +426,19 @@ class QueryHandler
 
     }
 
+    public async Task QueryInterval(int startId, int endId)
+    {
+        for (int i = startId; i <= endId; i++)
+        {
+            for (int j = 0; j <= 1; j++)
+            {
+                Console.WriteLine($"\nChecking STEAM_0:{j}_{i}");
+                await Query(j, i);
+                Thread.Sleep(100 * _settings.NumThreads);
+            }
+        }
+    }
+
     public async Task Run()
     {
         if (!(_settings.UnverifiedAccounts || _settings.Lvl0Accounts || _settings.OldGames || _settings.CsgoAccounts) || _settings.StartId >= _settings.EndId)
@@ -438,15 +451,21 @@ class QueryHandler
             Console.WriteLine("No Steam API key in Settings.json.");
             return;
         }
-        for (int i = _settings.StartId; i <= _settings.EndId; i++)
-            {
-                for (int j = 0; j <= 1; j++)
-                {
-                    Console.WriteLine($"\nChecking STEAM_0:{j}_{i}");
-                    await Query(j, i);
-                    Thread.Sleep(50);
-                }
-            }
-
+        
+        int totalRange = _settings.EndId - _settings.StartId + 1;
+        int chunkSize = totalRange / _settings.NumThreads;
+        List<Task> tasks = new List<Task>();
+        
+        for (int i = 0; i < _settings.NumThreads; i++)
+        {
+            int threadStart = _settings.StartId + (i * chunkSize);
+            int threadEnd = (i == _settings.NumThreads - 1) 
+                ? _settings.EndId 
+                : threadStart + chunkSize - 1;
+            
+            tasks.Add(Task.Run(async () => await QueryInterval(threadStart, threadEnd)));
+        }
+        
+        await Task.WhenAll(tasks);
     }
 }
