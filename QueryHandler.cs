@@ -43,7 +43,7 @@ class QueryHandler
 
         try
         {
-            HttpResponseMessage response = await httpClient.GetAsync(requestUrl);
+            using HttpResponseMessage response = await httpClient.GetAsync(requestUrl);
 
             if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests) // error 429
             {
@@ -53,7 +53,7 @@ class QueryHandler
 
             response.EnsureSuccessStatusCode();
             string jsonContent = await response.Content.ReadAsStringAsync();
-            JsonDocument data = JsonDocument.Parse(jsonContent);
+            using JsonDocument data = JsonDocument.Parse(jsonContent);
 
             if (data.RootElement.GetProperty("response").GetProperty("players").GetArrayLength() == 0)
             {
@@ -85,7 +85,7 @@ class QueryHandler
 
         try
         {
-            HttpResponseMessage response = await httpClient.GetAsync(requestUrl);
+            using HttpResponseMessage response = await httpClient.GetAsync(requestUrl);
 
             if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests) // error 429
             {
@@ -95,7 +95,7 @@ class QueryHandler
 
             response.EnsureSuccessStatusCode();
             string jsonContent = await response.Content.ReadAsStringAsync();
-            JsonDocument data = JsonDocument.Parse(jsonContent);
+            using JsonDocument data = JsonDocument.Parse(jsonContent);
             if (data.RootElement.GetProperty("response").TryGetProperty("player_level", out _))
             {
                 return data;
@@ -125,7 +125,7 @@ class QueryHandler
 
         try
         {
-            HttpResponseMessage response = await httpClient.GetAsync(requestUrl);
+            using HttpResponseMessage response = await httpClient.GetAsync(requestUrl);
 
             if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests) // error 429
             {
@@ -135,7 +135,7 @@ class QueryHandler
 
             response.EnsureSuccessStatusCode();
             string jsonContent = await response.Content.ReadAsStringAsync();
-            JsonDocument data = JsonDocument.Parse(jsonContent);
+            using JsonDocument data = JsonDocument.Parse(jsonContent);
             if (data.RootElement.GetProperty("response").TryGetProperty("games", out _))
             {
                 return data;
@@ -165,7 +165,7 @@ class QueryHandler
 
         try
         {
-            HttpResponseMessage response = await httpClient.GetAsync(requestUrl);
+            using HttpResponseMessage response = await httpClient.GetAsync(requestUrl);
 
             if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests) // error 429
             {
@@ -175,7 +175,7 @@ class QueryHandler
 
             response.EnsureSuccessStatusCode();
             string jsonContent = await response.Content.ReadAsStringAsync();
-            JsonDocument data = JsonDocument.Parse(jsonContent);
+            using JsonDocument data = JsonDocument.Parse(jsonContent);
             if (data.RootElement.GetProperty("response").TryGetProperty("badges", out _))
             {
                 return data;
@@ -402,26 +402,24 @@ class QueryHandler
 
         if (_settings.CsgoAccounts)
         {
-            if (dataGames != null && dataLevel != null && dataBadge != null)
+
+            if (await QueryCsgo(steamId, steamId64, playerName, dataSummary, dataGames!, dataLevel!, dataBadge!))
             {
-                if (await QueryCsgo(steamId, steamId64, playerName, dataSummary, dataGames, dataLevel, dataBadge))
-                {
-                    return;
-                }
+                return;
             }
+
             
         }
 
         // Old Games Query
         if (_settings.OldGames)
         {
-            if (dataGames != null && dataLevel != null && dataBadge != null)
+
+            if (await QueryOldGames(steamId, steamId64, playerName, dataGames!, dataLevel!, dataBadge!))
             {
-                if (await QueryOldGames(steamId, steamId64, playerName, dataGames, dataLevel, dataBadge))
-                {
-                    return;
-                }
+                return;
             }
+
         }
 
     }
