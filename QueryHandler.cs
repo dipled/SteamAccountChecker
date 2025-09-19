@@ -4,33 +4,20 @@ class QueryHandler
     private Settings _settings;
     private string _ApiKey;
 
-    public QueryHandler()
+    public QueryHandler(Settings settings, string ApiKey)
     {
-        if (!File.Exists("Settings.json"))
-        {
-            Settings newSettings = new Settings { StartId = 0, EndId = 0, UnverifiedAccounts = true, Lvl0Accounts = true, CsgoAccounts = true, OldGames = true, NumThreads = 4 };
-            string jsonString = JsonSerializer.Serialize(newSettings, new JsonSerializerOptions { WriteIndented = true });
-            Console.WriteLine("CREATING JSON FILE.\nEDIT FILE TO YOUR LIKING.");
-            File.WriteAllText("Settings.json", jsonString);
-            Thread.Sleep(5000);
-            Environment.Exit(0);
-        }
-        using FileStream fileStream = File.OpenRead("Settings.json");
-        Settings? settings = JsonSerializer.Deserialize<Settings>(fileStream);
-        if (settings == null)
-        {
-            throw new InvalidOperationException("Failed to deserialize JSON");
-        }
         _settings = settings;
-
-        Console.WriteLine("Enter your API key.");
-        string? ApiKey = Console.ReadLine();
-        if (ApiKey == null)
-        {
-            throw new InvalidOperationException("Failed to read API key");
-        }
         _ApiKey = ApiKey;
-        Directory.CreateDirectory("out/");
+    }
+
+    public void SetSettings(Settings settings)
+    {
+        _settings = settings;
+    }
+
+    public void SetApiKey(string ApiKey)
+    {
+        _ApiKey = ApiKey;
     }
 
     public async Task<JsonDocument?> RequestSummary(string steamId64)
@@ -53,7 +40,7 @@ class QueryHandler
 
             response.EnsureSuccessStatusCode();
             string jsonContent = await response.Content.ReadAsStringAsync();
-            using JsonDocument data = JsonDocument.Parse(jsonContent);
+            JsonDocument data = JsonDocument.Parse(jsonContent);
 
             if (data.RootElement.GetProperty("response").GetProperty("players").GetArrayLength() == 0)
             {
@@ -95,7 +82,7 @@ class QueryHandler
 
             response.EnsureSuccessStatusCode();
             string jsonContent = await response.Content.ReadAsStringAsync();
-            using JsonDocument data = JsonDocument.Parse(jsonContent);
+            JsonDocument data = JsonDocument.Parse(jsonContent);
             if (data.RootElement.GetProperty("response").TryGetProperty("player_level", out _))
             {
                 return data;
@@ -135,7 +122,7 @@ class QueryHandler
 
             response.EnsureSuccessStatusCode();
             string jsonContent = await response.Content.ReadAsStringAsync();
-            using JsonDocument data = JsonDocument.Parse(jsonContent);
+            JsonDocument data = JsonDocument.Parse(jsonContent);
             if (data.RootElement.GetProperty("response").TryGetProperty("games", out _))
             {
                 return data;
@@ -175,7 +162,7 @@ class QueryHandler
 
             response.EnsureSuccessStatusCode();
             string jsonContent = await response.Content.ReadAsStringAsync();
-            using JsonDocument data = JsonDocument.Parse(jsonContent);
+            JsonDocument data = JsonDocument.Parse(jsonContent);
             if (data.RootElement.GetProperty("response").TryGetProperty("badges", out _))
             {
                 return data;
@@ -444,12 +431,6 @@ class QueryHandler
             Console.WriteLine("No accounts to search, check the Settings.json file and try again.");
             return;
         }
-        if (_ApiKey == "")
-        {
-            Console.WriteLine("No Steam API key in Settings.json.");
-            return;
-        }
-        
         int totalRange = _settings.EndId - _settings.StartId + 1;
         int chunkSize = totalRange / _settings.NumThreads;
         List<Task> tasks = new List<Task>();
