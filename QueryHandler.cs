@@ -394,8 +394,6 @@ class QueryHandler
             {
                 return;
             }
-
-            
         }
 
         // Old Games Query
@@ -406,7 +404,6 @@ class QueryHandler
             {
                 return;
             }
-
         }
 
     }
