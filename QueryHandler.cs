@@ -413,6 +413,7 @@ class QueryHandler
 
     public async Task QueryInterval(int startId, int endId)
     {
+        Console.WriteLine($"Querying interval [{startId},{endId}]");
         for (int i = startId; i <= endId; i++)
         {
             for (int j = 0; j <= 1; j++)
